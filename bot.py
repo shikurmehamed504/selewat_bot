@@ -70,3 +70,43 @@ if __name__ == "__main__":
     
     # THIS LINE FIXES THE ERROR 100%
     app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
+
+# ===== PROFESSIONAL COMMANDS (add these) =====
+from datetime import datetime
+import asyncio
+
+# Daily 8 PM EAT auto-post
+async def daily_report():
+    while True:
+        now = datetime.now()
+        if now.hour == 20 and now.minute == 0:
+            total = load_total()
+            await context.bot.send_message(
+                chat_id=-1002134567890,  # REPLACE WITH YOUR GROUP ID
+                text=f"السلام عليكم ورحمة الله\n\n"
+                     f"الحمد لله! اليوم أرسلنا *{total:,}* صلاة على النبي ﷺ\n\n"
+                     f"الإجمالي: *{total:,}*\n"
+                     f"نواصل حتى 10 مليار إن شاء الله!",
+                parse_mode='Markdown'
+            )
+        await asyncio.sleep(60)
+
+# Web dashboard
+from flask import Flask
+app_flask = Flask(__name__)
+
+@app_flask.route('/total')
+def web_total():
+    return f"<h1><center>🕌 Selewat Total 🕌</center></h1><h2><center>{load_total():,}</center></h2>"
+
+# Start web server in background
+import threading
+threading.Thread(target=app_flask.run, kwargs={'host':'0.0.0.0','port':8080}, daemon=True).start()
+
+# Add commands
+app.add_handler(CommandHandler("total", total))
+app.add_handler(CommandHandler("stats", stats))
+app.add_handler(CommandHandler("top", top))
+
+# Start daily report
+context.job_queue.run_repeating(daily_report, interval=60)
