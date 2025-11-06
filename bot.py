@@ -1,8 +1,6 @@
 import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
-from datetime import datetime
-import asyncio
 from flask import Flask
 import threading
 
@@ -27,7 +25,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name = user.full_name
     await update.message.reply_text(
         f"السلام عليكم ورحمة الله وبركاته {name}!\n\n"
-        "Selewat Bot is now ACTIVE!\n\n"
+        "🕌 *Selewat Bot is now ACTIVE!*\n\n"
         "Send any number in the group to count Salawat\n"
         f"Current total: *{load_total():,}*\n\n"
         "Let’s reach 1 billion together InshaAllah!",
@@ -54,18 +52,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except ValueError:
         pass
 
-# PRO COMMANDS
-async def total(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(f"Total Salawat: *{load_total():,}*", parse_mode='Markdown')
-
-# Web dashboard
+# WEB DASHBOARD (fixed port)
 flask_app = Flask(__name__)
 @flask_app.route('/total')
 def web_total():
-    return f"<h1><center>Selewat Total</center></h1><h2><center>{load_total():,}</center></h2><meta http-equiv='refresh' content='5'>"
+    return f"<h1><center>🕌 Selewat Total 🕌</center></h1><h2><center>{load_total():,}</center></h2><meta http-equiv='refresh' content='10'>"
 
 def run_flask():
-    flask_app.run(host='0.0.0.0', port=8080)
+    flask_app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
 
 if __name__ == "__main__":
     print("Selewat Bot Starting... Total starts at 0")
@@ -73,10 +67,9 @@ if __name__ == "__main__":
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.add_handler(CommandHandler("total", total))
     
-    # Start web server
+    # Start web dashboard
     threading.Thread(target=run_flask, daemon=True).start()
     
-    print("Bot + Web Dashboard LIVE 24/7")
+    print("Bot + Web Dashboard LIVE 24/7 – GREEN IN 30 SECONDS")
     app.run_polling(drop_pending_updates=True)
