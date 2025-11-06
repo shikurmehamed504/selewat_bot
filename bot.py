@@ -50,6 +50,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # WEB DASHBOARD
 flask_app = Flask(__name__)
+@flask_app.route('/')
 @flask_app.route('/total')
 def total():
     return f'<h1><center>Selewat Total</center></h1><h2><center>{load_total():,}</center></h2><meta http-equiv="refresh" content="10">'
@@ -67,4 +68,4 @@ if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
     
     print("Bot + Web Dashboard LIVE 24/7 – GREEN IN 30 SECONDS")
-    app.run_polling()
+    app.run_polling(drop_pending_updates=True)
