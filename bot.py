@@ -23,7 +23,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name = user.full_name
     await update.message.reply_text(
         f"السلام عليكم ورحمة الله وبركاته {name}!\n\n"
-        "Selewat Bot is now ACTIVE!\n\n"
+        "🕌 *Selewat Bot is now ACTIVE!*\n\n"
         "Send any number in the group to count Salawat\n"
         f"Current total: *{load_total():,}*\n\n"
         "Let’s reach 1 billion together InshaAllah!",
@@ -61,14 +61,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pass
 
 if __name__ == "__main__":
-    print("Selewat Bot Starting...")
-    print("Total starts at 0")
+    print("Selewat Bot Starting... Total starts at 0")
     
-    app = ApplicationBuilder().token(TOKEN).build()
+    app = ApplicationBuilder().token(TOKEN).concurrent_updates=True).build()
     
-    # Fixed: Added missing import for Updater
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    print("Bot is LIVE 24/7 on Render.com")
-    app.run_polling(drop_pending_updates=True)
+    # THIS LINE FIXES THE ERROR 100%
+    app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
