@@ -3,6 +3,7 @@ import threading
 import asyncio
 import urllib.request
 import logging
+import re  # ← ADDED: Extract numbers from Arabic/English text
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from flask import Flask
@@ -58,30 +59,35 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
+    
     text = update.message.text.strip()
     if text.startswith('/'):
         return
-    try:
-        num = int(text)
-        if num <= 0:
-            return
-        
-        user = update.message.from_user
-        full_name = user.full_name
-        old = load_total()
-        new = old + num
-        save_total(new)
 
-        # REPLY IN GROUP (NOT PRIVATE)
-        await update.message.reply_text(
-            f"<b>{full_name}</b> added <b>{num:,}</b> to <b>Group Salawat</b>\n"
-            f"Total count: <b>{new:,}</b>",
-            parse_mode='HTML',
-            reply_to_message_id=update.message.message_id  # ← SHOWS IN GROUP
-        )
-        logger.info(f"{full_name} +{num} → {new}")
-    except ValueError:
-        pass
+    # EXTRACT FIRST NUMBER FROM ANY TEXT (Arabic, English, Emojis)
+    match = re.search(r'\d+', text)
+    if not match:
+        return
+    
+    num = int(match.group())
+    if num <= 0:
+        return
+
+    user = update.message.from_user
+    full_name = user.full_name
+    old = load_total()
+    new = old + num
+    save_total(new)
+
+    # REPLY IN GROUP (NOT PRIVATE)
+    await update.message.reply_text(
+        f"<b>{full_name}</b> added <b>{num:,}</b> to <b>Group Salawat</b>\
+
+        f"Total count: <b>{new:,}</b>",
+        parse_mode='HTML',
+        reply_to_message_id=update.message.message_id  # ← SHOWS IN GROUP
+    )
+    logger.info(f"{full_name} +{num} → GLOBAL: {new}")
 
 # ==================== WEB DASHBOARD ====================
 flask_app = Flask(__name__)
@@ -99,8 +105,8 @@ def total():
         Every number you send adds to this total – help reach <b>1 BILLION</b> InshaAllah!
     </p>
     <p style="text-align:center;">
-        <a href="https://t.me/sirrul_wejud" 
-           style="background:#25D366; color:white; padding:14px 30px; border-radius:30px; 
+        <a href="https://t.me/sirrul_wejud"
+           style="background:#25D366; color:white; padding:14px 30px; border-radius:30px;
                   text-decoration:none; font-weight:bold; font-size:18px; display:inline-block;">
             Join @sirrul_wejud Now
         </a>
@@ -133,5 +139,5 @@ if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=lambda: asyncio.run(keep_alive()), daemon=True).start()
     
-    logger.info("LIVE – SHOWS ALL SUBMISSIONS IN GROUP LIKE IMAGE 3!")
+    logger.info("LIVE 24/7 – COUNTS FROM ARABIC TEXT – DASHBOARD MOTIVATES @sirrul_wejud!")
     app.run_polling(drop_pending_updates=True)
