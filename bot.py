@@ -9,7 +9,7 @@ from flask import Flask
 
 # ==================== CONFIG ====================
 TOKEN = "8229668167:AAFmHYkIfwzTNMa_SzPETJrCJSfE42CPmNA"
-FILE = "/data/total.txt"  # GLOBAL PERSISTENT FILE
+FILE = "/data/total.txt"
 WEB_URL = "https://selewat-bot.onrender.com/total"
 
 # LOGGING
@@ -19,8 +19,11 @@ logger = logging.getLogger(__name__)
 # ==================== GLOBAL FILE HANDLING ====================
 def ensure_file():
     if not os.path.exists(FILE):
-        save_total(0)
+        with open(FILE, "w") as f:
+            f.write("0")
         logger.info(f"CREATED GLOBAL FILE: {FILE} with 0")
+    else:
+        logger.info(f"GLOBAL FILE EXISTS: {FILE}")
 
 def load_total():
     try:
@@ -29,7 +32,8 @@ def load_total():
             logger.info(f"GLOBAL TOTAL LOADED: {total}")
             return total
     except:
-        logger.warning("NO GLOBAL FILE → STARTING FROM 0")
+        logger.warning("FILE CORRUPTED → STARTING FROM 0")
+        save_total(0)
         return 0
 
 def save_total(total):
@@ -72,7 +76,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             f"{name} added {num:,} Salawat\n"
             f"**GLOBAL TOTAL**: {new:,}\n"
-            f"({chat_type} chat)"
+            f"({chat_type})"
         )
         logger.info(f"ADDED {num} by {name} in {chat_type} → GLOBAL: {new}")
     except ValueError:
@@ -112,7 +116,7 @@ async def keep_alive():
 # ==================== MAIN ====================
 if __name__ == "__main__":
     logger.info("GLOBAL SELEWAT BOT STARTING...")
-    ensure_file()  # ← ONE GLOBAL FILE
+    ensure_file()  # ← ONLY CREATES IF MISSING
     
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -121,5 +125,5 @@ if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=lambda: asyncio.run(keep_alive()), daemon=True).start()
     
-    logger.info("LIVE 24/7 – GLOBAL TOTAL FOR GROUP + PRIVATE – ETERNAL!")
+    logger.info("LIVE 24/7 – GLOBAL TOTAL NEVER RESETS – ETERNAL!")
     app.run_polling(drop_pending_updates=True)
