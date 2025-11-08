@@ -75,28 +75,41 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except ValueError:
         pass
 
-# ==================== WEB & KEEP-ALIVE ====================
+# ==================== WEB DASHBOARD ====================
 flask_app = Flask(__name__)
+
+@flask_app.route('/')
 @flask_app.route('/total')
 def total():
-    return f"<h1 style='text-align:center; color:#1E90FF;'>{load_total():,}</h1>"
+    count = load_total()
+    return f'''
+    <meta http-equiv="refresh" content="10">
+    <h1 style="text-align:center; color:#2E8B57;">Selewat Total</h1>
+    <h2 style="text-align:center; color:#1E90FF;">{count:,}</h2>
+    <p style="text-align:center;">
+        <a href="https://t.me/+YOUR_GROUP_LINK">Join Group</a> |
+        <a href="https://t.me/sirulwujudselewatbot">@sirulwujudselewatbot</a>
+    </p>
+    '''
 
 def run_flask():
-    flask_app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)), use_reloader=False)
+    port = int(os.environ.get('PORT', 10000))
+    flask_app.run(host='0.0.0.0', port=port, use_reloader=False)
 
+# ==================== KEEP-ALIVE ====================
 async def keep_alive():
     while True:
         await asyncio.sleep(300)
         try:
             urllib.request.urlopen(WEB_URL, timeout=10)
-            logger.info("PING SENT")
+            logger.info("PING: Keep-alive sent")
         except:
             pass
 
 # ==================== MAIN ====================
 if __name__ == "__main__":
-    logger.info("STARTING CLEAN...")
-    ensure_file()  # CREATE FILE IF MISSING
+    logger.info("SELEWAT BOT STARTING CLEAN...")
+    ensure_file()
     
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -105,5 +118,5 @@ if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=lambda: asyncio.run(keep_alive()), daemon=True).start()
     
-    logger.info("LIVE 24/7 – NO CONFLICTS – WILL COUNT!")
+    logger.info("LIVE 24/7 – NO CONFLICTS – COUNTING NOW!")
     app.run_polling(drop_pending_updates=True)
