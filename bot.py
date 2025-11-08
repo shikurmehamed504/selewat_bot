@@ -2,6 +2,7 @@ import os
 import threading
 import asyncio
 import urllib.request
+import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from flask import Flask
@@ -11,27 +12,34 @@ TOKEN = "8229668167:AAFmHYkIfwzTNMa_SzPETJrCJSfE42CPmNA"
 FILE = "/data/total.txt"
 WEB_URL = "https://selewat-bot.onrender.com/total"
 
+# LOGGING
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # ==================== FILE HANDLING ====================
 def load_total():
     try:
         with open(FILE, "r") as f:
-            return int(f.read().strip())
-    except:
+            total = int(f.read().strip())
+            logger.info(f"LOADED TOTAL: {total}")
+            return total
+    except Exception as e:
+        logger.warning(f"LOAD FAILED: {e} → Starting from 0")
         return 0
 
 def save_total(total):
     try:
         with open(FILE, "w") as f:
             f.write(str(total))
-        print(f"SAVED TOTAL: {total}")
+        logger.info(f"SAVED TOTAL: {total}")
     except Exception as e:
-        print(f"SAVE FAILED: {e}")
+        logger.error(f"SAVE FAILED: {e}")
 
 # ==================== TELEGRAM BOT ====================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(f"/start from {update.message.from_user.full_name}")
+    logger.info(f"/start from {update.message.from_user.full_name}")
     await update.message.reply_text(
-        "السلام عليكم ورحمة الله وبركاته\n\n"
+        "السلام عليكم\n\n"
         "SIRULWUJUD SELEWAT BOT\n\n"
         f"Current total: *{load_total():,}*\n\n"
         "Send any number = counted!\n"
@@ -41,24 +49,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
-        print("NO TEXT MESSAGE")
+        logger.info("NO TEXT MESSAGE")
         return
     
     text = update.message.text.strip()
     user = update.message.from_user
     name = f"@{user.username}" if user.username else user.full_name
     
-    print(f"MESSAGE FROM {name}: '{text}'")
+    logger.info(f"MESSAGE FROM {name}: '{text}'")
 
     # Ignore commands
     if text.startswith('/'):
-        print("IGNORED COMMAND")
+        logger.info("IGNORED COMMAND")
         return
     
     try:
         num = int(text)
         if num <= 0:
-            print("NUMBER <= 0")
+            logger.info("NUMBER <= 0")
             return
             
         old = load_total()
@@ -70,10 +78,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"Total: *{new:,}*",
             parse_mode='Markdown'
         )
-        print(f"COUNTED: +{num:,} → TOTAL: {new:,}")
+        logger.info(f"COUNTED: +{num:,} → TOTAL: {new:,}")
         
     except ValueError:
-        print(f"NOT A NUMBER: {text}")
+        logger.info(f"NOT A NUMBER: {text}")
 
 # ==================== WEB DASHBOARD ====================
 flask_app = Flask(__name__)
@@ -81,11 +89,11 @@ flask_app = Flask(__name__)
 @flask_app.route('/')
 @flask_app.route('/total')
 def total():
-    total_count = load_total()
+    count = load_total()
     return f'''
     <meta http-equiv="refresh" content="10">
     <h1 style="text-align:center; color:#2E8B57;">Selewat Total</h1>
-    <h2 style="text-align:center; color:#1E90FF;">{total_count:,}</h2>
+    <h2 style="text-align:center; color:#1E90FF;">{count:,}</h2>
     <p style="text-align:center;">
         <a href="https://t.me/+YOUR_GROUP_LINK">Join Group</a> |
         <a href="https://t.me/sirulwujudselewatbot">@sirulwujudselewatbot</a>
@@ -102,9 +110,9 @@ async def keep_alive():
         await asyncio.sleep(300)
         try:
             urllib.request.urlopen(WEB_URL, timeout=10)
-            print("PING: Keep-alive sent")
+            logger.info("PING: Keep-alive sent")
         except:
-            print("PING FAILED")
+            logger.warning("PING FAILED")
 
 def start_keep_alive():
     loop = asyncio.new_event_loop()
@@ -113,16 +121,16 @@ def start_keep_alive():
 
 # ==================== MAIN ====================
 if __name__ == "__main__":
-    print("SELEWAT BOT STARTING... 100% ETERNAL")
+    logger.info("SELEWAT BOT STARTING ON RENDER...")
     
     app = Application.builder().token(TOKEN).build()
     
-    # CRITICAL: Listen to ALL messages
+    # EXACT SAME FILTER AS LOCAL/LAMBDA
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.ALL, handle_message))  # LISTEN TO EVERYTHING
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=start_keep_alive, daemon=True).start()
     
-    print("LIVE 24/7 – DEBUG MODE ON – COUNTS EVERYWHERE!")
+    logger.info("LIVE 24/7 – USING SAME FILTER AS LOCAL – WILL COUNT NOW!")
     app.run_polling(drop_pending_updates=True)
