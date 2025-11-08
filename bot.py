@@ -8,7 +8,7 @@ from flask import Flask
 
 # ==================== CONFIG ====================
 TOKEN = "8229668167:AAFmHYkIfwzTNMa_SzPETJrCJSfE42CPmNA"
-FILE = "/data/total.txt"  # RENDER PERSISTENT DISK
+FILE = "/data/total.txt"
 WEB_URL = "https://selewat-bot.onrender.com/total"
 
 # ==================== FILE HANDLING ====================
@@ -23,38 +23,44 @@ def save_total(total):
     try:
         with open(FILE, "w") as f:
             f.write(str(total))
+        print(f"SAVED TOTAL: {total}")
     except Exception as e:
-        print(f"Save failed: {e}")
+        print(f"SAVE FAILED: {e}")
 
 # ==================== TELEGRAM BOT ====================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print(f"/start from {update.message.from_user.full_name}")
     await update.message.reply_text(
         "السلام عليكم ورحمة الله وبركاته\n\n"
         "SIRULWUJUD SELEWAT BOT\n\n"
         f"Current total: *{load_total():,}*\n\n"
-        "Send your daily selewat number\n"
+        "Send any number = counted!\n"
         "Let’s hit 1 billion tonight InshaAllah!",
         parse_mode='Markdown'
     )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
+        print("NO TEXT MESSAGE")
         return
     
     text = update.message.text.strip()
+    user = update.message.from_user
+    name = f"@{user.username}" if user.username else user.full_name
     
-    # Ignore commands like /start
+    print(f"MESSAGE FROM {name}: '{text}'")
+
+    # Ignore commands
     if text.startswith('/'):
+        print("IGNORED COMMAND")
         return
     
     try:
         num = int(text)
         if num <= 0:
+            print("NUMBER <= 0")
             return
-        
-        user = update.message.from_user
-        name = f"@{user.username}" if user.username else user.full_name
-        
+            
         old = load_total()
         new = old + num
         save_total(new)
@@ -64,8 +70,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"Total: *{new:,}*",
             parse_mode='Markdown'
         )
+        print(f"COUNTED: +{num:,} → TOTAL: {new:,}")
+        
     except ValueError:
-        pass  # Ignore non-numbers
+        print(f"NOT A NUMBER: {text}")
 
 # ==================== WEB DASHBOARD ====================
 flask_app = Flask(__name__)
@@ -73,17 +81,14 @@ flask_app = Flask(__name__)
 @flask_app.route('/')
 @flask_app.route('/total')
 def total():
+    total_count = load_total()
     return f'''
     <meta http-equiv="refresh" content="10">
-    <h1 style="text-align:center; font-family:Arial; color:#2E8B57;">
-        Selewat Total
-    </h1>
-    <h2 style="text-align:center; font-family:Arial; color:#1E90FF;">
-        {load_total():,}
-    </h2>
-    <p style="text-align:center; font-size:18px;">
-        <a href="https://t.me/+YOUR_GROUP_LINK" style="color:#25D366; text-decoration:none;">Join Group</a> |
-        <a href="https://t.me/sirulwujudselewatbot" style="color:#0088cc; text-decoration:none;">@sirulwujudselewatbot</a>
+    <h1 style="text-align:center; color:#2E8B57;">Selewat Total</h1>
+    <h2 style="text-align:center; color:#1E90FF;">{total_count:,}</h2>
+    <p style="text-align:center;">
+        <a href="https://t.me/+YOUR_GROUP_LINK">Join Group</a> |
+        <a href="https://t.me/sirulwujudselewatbot">@sirulwujudselewatbot</a>
     </p>
     '''
 
@@ -91,15 +96,15 @@ def run_flask():
     port = int(os.environ.get('PORT', 10000))
     flask_app.run(host='0.0.0.0', port=port, use_reloader=False)
 
-# ==================== KEEP-ALIVE PING ====================
+# ==================== KEEP-ALIVE ====================
 async def keep_alive():
     while True:
-        await asyncio.sleep(300)  # Every 5 minutes
+        await asyncio.sleep(300)
         try:
             urllib.request.urlopen(WEB_URL, timeout=10)
-            print("Keep-alive ping sent")
-        except Exception as e:
-            print(f"Ping failed: {e}")
+            print("PING: Keep-alive sent")
+        except:
+            print("PING FAILED")
 
 def start_keep_alive():
     loop = asyncio.new_event_loop()
@@ -108,22 +113,16 @@ def start_keep_alive():
 
 # ==================== MAIN ====================
 if __name__ == "__main__":
-    print("Selewat Bot Starting... Total starts at 0")
+    print("SELEWAT BOT STARTING... 100% ETERNAL")
     
-    # Build Application
     app = Application.builder().token(TOKEN).build()
     
-    # Add Handlers
+    # CRITICAL: Listen to ALL messages
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT, handle_message))  # WORKS IN GROUP + PRIVATE
+    app.add_handler(MessageHandler(filters.ALL, handle_message))  # LISTEN TO EVERYTHING
     
-    # Start Flask Dashboard
     threading.Thread(target=run_flask, daemon=True).start()
-    
-    # Start Keep-Alive
     threading.Thread(target=start_keep_alive, daemon=True).start()
     
-    print("LIVE 24/7 – Counting every Salawat in Group & Private!")
-    
-    # Run Bot
+    print("LIVE 24/7 – DEBUG MODE ON – COUNTS EVERYWHERE!")
     app.run_polling(drop_pending_updates=True)
