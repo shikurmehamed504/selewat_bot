@@ -17,13 +17,15 @@ WEB_URL = "https://selewat-bot.onrender.com/total"
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ==================== FILE HANDLING ====================
+# ==================== GLOBAL FILE HANDLING ====================
 def ensure_file():
     os.makedirs(DATA_DIR, exist_ok=True)
     if not os.path.exists(FILE):
         with open(FILE, "w") as f:
             f.write("0")
-        logger.info(f"CREATED: {FILE} with 0")
+        logger.info(f"CREATED: {FILE}")
+    else:
+        logger.info(f"LOADED: {FILE}")
 
 def load_total():
     try:
@@ -34,16 +36,21 @@ def load_total():
         return 0
 
 def save_total(total):
-    with open(FILE, "w") as f:
-        f.write(str(total))
+    try:
+        with open(FILE, "w") as f:
+            f.write(str(total))
+        logger.info(f"SAVED: {total}")
+    except Exception as e:
+        logger.error(f"SAVE FAILED: {e}")
 
 # ==================== BOT HANDLERS ====================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    total = load_total()
     await update.message.reply_text(
         "السلام عليكم ورحمة الله\n\n"
         "SIRULWUJUD SELEWAT BOT\n\n"
-        f"**GLOBAL TOTAL**: *{load_total():,}*\n\n"
-        "Send any number = counted in Group Salawat!\n"
+        f"**GLOBAL TOTAL**: *{total:,}*\n\n"
+        "Send any number = added to **GROUP SALAWAT**!\n"
         "Let’s hit 1 billion InshaAllah!",
         parse_mode='Markdown'
     )
@@ -65,11 +72,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         new = old + num
         save_total(new)
 
-        # EXACTLY LIKE YOUR IMAGE
+        # REPLY IN GROUP (NOT PRIVATE)
         await update.message.reply_text(
             f"<b>{full_name}</b> added <b>{num:,}</b> to <b>Group Salawat</b>\n"
             f"Total count: <b>{new:,}</b>",
-            parse_mode='HTML'
+            parse_mode='HTML',
+            reply_to_message_id=update.message.message_id  # ← SHOWS IN GROUP
         )
         logger.info(f"{full_name} +{num} → {new}")
     except ValueError:
@@ -108,7 +116,7 @@ async def keep_alive():
 
 # ==================== MAIN ====================
 if __name__ == "__main__":
-    logger.info("SELEWAT BOT STARTING...")
+    logger.info("GLOBAL SELEWAT BOT STARTING...")
     ensure_file()
     
     app = Application.builder().token(TOKEN).build()
@@ -118,5 +126,5 @@ if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=lambda: asyncio.run(keep_alive()), daemon=True).start()
     
-    logger.info("LIVE – SHOWING FULL NAMES + 'to Group Salawat'!")
+    logger.info("LIVE – SHOWS ALL SUBMISSIONS IN GROUP LIKE IMAGE 3!")
     app.run_polling(drop_pending_updates=True)
