@@ -8,7 +8,7 @@ from flask import Flask
 
 # ==================== CONFIG ====================
 TOKEN = "8229668167:AAFmHYkIfwzTNMa_SzPETJrCJSfE42CPmNA"
-FILE = "/data/total.txt"  # PERSISTENT DISK ON RENDER
+FILE = "/data/total.txt"  # RENDER PERSISTENT DISK
 WEB_URL = "https://selewat-bot.onrender.com/total"  # YOUR LIVE COUNTER URL
 
 # ENSURE /data DIRECTORY EXISTS
@@ -30,10 +30,10 @@ def save_total(total):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "السلام عليكم ورحمة الله وبركاته\n\n"
-        "SELEWAT BOT 24/7 ETERNAL\n\n"
+        "SIRULWUJUD SELEWAT BOT\n\n"
         f"Current total: *{load_total():,}*\n\n"
-        "Send any number = Salawat counted!\n"
-        "Let’s hit 10 billion tonight InshaAllah!",
+        "Send your daily selewat number\n"
+        "Let’s hit 1 billion tonight InshaAllah!",
         parse_mode='Markdown'
     )
 
