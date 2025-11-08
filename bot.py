@@ -23,8 +23,8 @@ def load_total():
             total = int(f.read().strip())
             logger.info(f"LOADED TOTAL: {total}")
             return total
-    except Exception as e:
-        logger.warning(f"LOAD FAILED: {e} → Starting from 0")
+    except:
+        logger.warning("NO FILE → STARTING FROM 0")
         return 0
 
 def save_total(total):
@@ -37,7 +37,8 @@ def save_total(total):
 
 # ==================== TELEGRAM BOT ====================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logger.info(f"/start from {update.message.from_user.full_name}")
+    user = update.message.from_user
+    logger.info(f"/start from {user.full_name} (@{user.username})")
     await update.message.reply_text(
         "السلام عليكم\n\n"
         "SIRULWUJUD SELEWAT BOT\n\n"
@@ -49,24 +50,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
-        logger.info("NO TEXT MESSAGE")
         return
     
     text = update.message.text.strip()
     user = update.message.from_user
     name = f"@{user.username}" if user.username else user.full_name
     
-    logger.info(f"MESSAGE FROM {name}: '{text}'")
+    logger.info(f"RAW MESSAGE: '{text}' from {name}")
 
-    # Ignore commands
+    # CRITICAL: Only non-command messages
     if text.startswith('/'):
-        logger.info("IGNORED COMMAND")
         return
     
     try:
         num = int(text)
         if num <= 0:
-            logger.info("NUMBER <= 0")
             return
             
         old = load_total()
@@ -78,10 +76,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"Total: *{new:,}*",
             parse_mode='Markdown'
         )
-        logger.info(f"COUNTED: +{num:,} → TOTAL: {new:,}")
+        logger.info(f"SUCCESS: +{num:,} → TOTAL: {new:,}")
         
     except ValueError:
-        logger.info(f"NOT A NUMBER: {text}")
+        logger.info(f"IGNORED (not number): {text}")
 
 # ==================== WEB DASHBOARD ====================
 flask_app = Flask(__name__)
@@ -112,7 +110,7 @@ async def keep_alive():
             urllib.request.urlopen(WEB_URL, timeout=10)
             logger.info("PING: Keep-alive sent")
         except:
-            logger.warning("PING FAILED")
+            pass
 
 def start_keep_alive():
     loop = asyncio.new_event_loop()
@@ -125,12 +123,12 @@ if __name__ == "__main__":
     
     app = Application.builder().token(TOKEN).build()
     
-    # EXACT SAME FILTER AS LOCAL/LAMBDA
+    # FINAL FILTER: Works on Render
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(MessageHandler(filters.Regex(r'^[^/].*$'), handle_message))
     
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=start_keep_alive, daemon=True).start()
     
-    logger.info("LIVE 24/7 – USING SAME FILTER AS LOCAL – WILL COUNT NOW!")
+    logger.info("LIVE 24/7 – USING REGEX FILTER – WILL COUNT NOW!")
     app.run_polling(drop_pending_updates=True)
