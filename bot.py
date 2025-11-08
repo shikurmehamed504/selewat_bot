@@ -9,45 +9,46 @@ from flask import Flask
 
 # ==================== CONFIG ====================
 TOKEN = "8229668167:AAFmHYkIfwzTNMa_SzPETJrCJSfE42CPmNA"
-FILE = "/data/total.txt"
+FILE = "/data/total.txt"  # GLOBAL PERSISTENT FILE
 WEB_URL = "https://selewat-bot.onrender.com/total"
 
 # LOGGING
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ==================== FILE HANDLING ====================
+# ==================== GLOBAL FILE HANDLING ====================
 def ensure_file():
     if not os.path.exists(FILE):
         save_total(0)
-        logger.info(f"CREATED {FILE} with 0")
+        logger.info(f"CREATED GLOBAL FILE: {FILE} with 0")
 
 def load_total():
     try:
         with open(FILE, "r") as f:
             total = int(f.read().strip())
-            logger.info(f"LOADED: {total}")
+            logger.info(f"GLOBAL TOTAL LOADED: {total}")
             return total
     except:
-        logger.warning("NO FILE → STARTING FROM 0")
+        logger.warning("NO GLOBAL FILE → STARTING FROM 0")
         return 0
 
 def save_total(total):
     try:
         with open(FILE, "w") as f:
             f.write(str(total))
-        logger.info(f"SAVED: {total}")
+        logger.info(f"GLOBAL TOTAL SAVED: {total}")
     except Exception as e:
         logger.error(f"SAVE FAILED: {e}")
 
 # ==================== TELEGRAM BOT ====================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logger.info(f"/start from {update.message.from_user.full_name}")
+    chat_type = update.message.chat.type
+    logger.info(f"/start from {update.message.from_user.full_name} in {chat_type}")
     await update.message.reply_text(
         "السلام عليكم ورحمة الله\n\n"
         "SIRULWUJUD SELEWAT BOT\n\n"
-        f"Current total: *{load_total():,}*\n\n"
-        "Send any number = counted!\n"
+        f"**GLOBAL TOTAL**: *{load_total():,}*\n\n"
+        "Send any number = counted in **GLOBAL TOTAL**!\n"
         "Let’s hit 1 billion tonight InshaAllah!",
         parse_mode='Markdown'
     )
@@ -62,16 +63,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         num = int(text)
         if num <= 0:
             return
-        name = f"@{update.message.from_user.username}" if update.message.from_user.username else update.message.from_user.full_name
+        user = update.message.from_user
+        name = f"@{user.username}" if user.username else user.full_name
+        chat_type = update.message.chat.type
         old = load_total()
         new = old + num
         save_total(new)
-        # FIX: Use plain text to avoid Markdown parse error
         await update.message.reply_text(
             f"{name} added {num:,} Salawat\n"
-            f"Total: {new:,}"
+            f"**GLOBAL TOTAL**: {new:,}\n"
+            f"({chat_type} chat)"
         )
-        logger.info(f"COUNTED: +{num} → {new}")
+        logger.info(f"ADDED {num} by {name} in {chat_type} → GLOBAL: {new}")
     except ValueError:
         pass
 
@@ -84,11 +87,11 @@ def total():
     count = load_total()
     return f'''
     <meta http-equiv="refresh" content="10">
-    <h1 style="text-align:center; color:#2E8B57;">Selewat Total</h1>
-    <h2 style="text-align:center; color:#1E90FF;">{count:,}</h2>
-    <p style="text-align:center;">
-        <a href="https://t.me/+YOUR_GROUP_LINK">Join Group</a> |
-        <a href="https://t.me/sirulwujudselewatbot">@sirulwujudselewatbot</a>
+    <h1 style="text-align:center; color:#2E8B57; font-family:Arial;">GLOBAL SELEWAT TOTAL</h1>
+    <h2 style="text-align:center; color:#1E90FF; font-size:48px;">{count:,}</h2>
+    <p style="text-align:center; font-size:20px;">
+        <a href="https://t.me/+YOUR_GROUP_LINK" style="color:#25D366; text-decoration:none;">Join Group</a> |
+        <a href="https://t.me/sirulwujudselewatbot" style="color:#0088cc; text-decoration:none;">@sirulwujudselewatbot</a>
     </p>
     '''
 
@@ -108,8 +111,8 @@ async def keep_alive():
 
 # ==================== MAIN ====================
 if __name__ == "__main__":
-    logger.info("SELEWAT BOT STARTING CLEAN...")
-    ensure_file()  # ← Creates file BEFORE any load/save
+    logger.info("GLOBAL SELEWAT BOT STARTING...")
+    ensure_file()  # ← ONE GLOBAL FILE
     
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -118,5 +121,5 @@ if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=lambda: asyncio.run(keep_alive()), daemon=True).start()
     
-    logger.info("LIVE 24/7 – NO ERRORS – COUNTING NOW!")
+    logger.info("LIVE 24/7 – GLOBAL TOTAL FOR GROUP + PRIVATE – ETERNAL!")
     app.run_polling(drop_pending_updates=True)
