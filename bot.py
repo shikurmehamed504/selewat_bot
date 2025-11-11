@@ -106,12 +106,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text.startswith('/'):
         return
 
-    # FIXED: ONLY FIRST NUMBER – NO EXTRA DIGITS!
-    match = re.search(r'\d+', text)
-    if not match:
+    # FINAL FIX: TAKE THE LARGEST NUMBER IN THE MESSAGE = REAL SALAWAT
+    numbers = re.findall(r'\d+', text)
+    if not numbers:
         return
 
-    num = int(match.group())
+    num = max(int(n) for n in numbers)  # ← BIGGEST NUMBER = CORRECT COUNT!
     if num <= 0:
         return
 
@@ -202,5 +202,5 @@ if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=lambda: asyncio.run(keep_alive()), daemon=True).start()
     
-    logger.info("LIVE 24/7 – ONLY FIRST NUMBER – 100% ACCURATE – CHALLENGE SYSTEM!")
+    logger.info("LIVE 24/7 – LARGEST NUMBER = REAL COUNT – 100% FIXED – ETERNAL SADAQAH!")
     app.run_polling(drop_pending_updates=True)
