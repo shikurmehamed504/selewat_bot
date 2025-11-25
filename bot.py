@@ -276,7 +276,8 @@ if __name__ == "__main__":
     logger.info("GLOBAL SELEWAT BOT STARTING...")
     ensure_file()
     
-    app = Application.builder().token(TOKEN).job_queue().build()
+    app = Application.builder().token(TOKEN).build()
+    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
@@ -286,5 +287,5 @@ if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=lambda: asyncio.run(keep_alive()), daemon=True).start()
     
-    logger.info("LIVE 24/7 – JOB QUEUE ACTIVE – DAILY REPORT 6PM EAT!")
+    logger.info("LIVE 24/7 – ALL FEATURES ACTIVE – ETERNAL SADAQAH!")
     app.run_polling(drop_pending_updates=True)
