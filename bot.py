@@ -72,7 +72,7 @@ def save_daily(data):
     with open(DAILY_FILE, "w") as f:
         json.dump(data, f)
 
-# ==================== DAILY REPORT (6PM EAT – ALL GROUPS) ====================
+# ==================== DAILY REPORT (6PM EAT) ====================
 async def daily_report(context):
     today = datetime.now().strftime("%Y-%m-%d")
     data = load_daily()
@@ -118,7 +118,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     username = user.username or "Unknown"
 
-    # ONLY ALLOW THESE 3 USERS
     if username not in ALLOWED_USERS:
         await update.message.reply_text(
             "السلام عليكم\n\n"
@@ -140,7 +139,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # CHECK IF BOT IS ADMIN
     try:
         bot_member = await context.bot.get_chat_member(chat.id, context.bot.id)
         if bot_member.status not in ["administrator", "creator"]:
@@ -153,7 +151,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"ADMIN CHECK FAILED: {e}")
         return
 
-    # SHOW FULL STATS
     total = load_total()
     chal = load_challenge()
     remaining = max(0, CHALLENGE_GOAL - chal)
@@ -166,8 +163,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"**ጠቅላላ**: *{min(chal, CHALLENGE_GOAL):,} / {CHALLENGE_GOAL:,}*\n"
         f"**የቀረው**: *{remaining:,}*\n"
         f"**ዛሬ ሪፖርት ያደረጉ አህባቦች ብዛት**: *{participants_today}*\n\n"
-        "በእዚህ የጀምዓ የሰለዎት ዘመቻ ላይ በቻልነው ያህል በመሳተፍ የበረካው ተካፋይ እንሁን !!\n"
-        "20 million እስክንደርስ ድረስ InshaAllah!\n\n",
+        "በእዚህ የጀምዓ የሰለዎት ዘመቻ ላይ በቻልነው ያህል በመሳተፍ የበረካው ተካፋይ እንሁን!!\n"
+        "20 million እስክንደርስ ድረስ InshaAllah\n\n",
         parse_mode='Markdown',
         disable_web_page_preview=True
     )
@@ -191,7 +188,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text.startswith('/'):
         return
 
-    # SKIP *65567*
     if re.search(r'\*\d+\*', text):
         return
 
@@ -216,7 +212,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_challenge(new_chal)
     save_total(new_total)
 
-    # Update daily stats
     today = datetime.now().strftime("%Y-%m-%d")
     daily = load_daily()
     if today not in daily:
@@ -281,15 +276,15 @@ if __name__ == "__main__":
     logger.info("GLOBAL SELEWAT BOT STARTING...")
     ensure_file()
     
-    app = Application.builder().token(TOKEN).build()
+    app = Application.builder().token(TOKEN).job_queue=True).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    # Daily report at 6:00 PM EAT
+    # DAILY REPORT AT 6:00 PM EAT
     app.job_queue.run_daily(daily_report, time=datetime.time(hour=15, minute=0))
     
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=lambda: asyncio.run(keep_alive()), daemon=True).start()
     
-    logger.info("LIVE 24/7 – RESTRICTED /start – DAILY REPORT – ETERNAL!")
+    logger.info("LIVE 24/7 – JOB QUEUE ACTIVE – DAILY REPORT 6PM EAT!")
     app.run_polling(drop_pending_updates=True)
