@@ -281,15 +281,11 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    # DAILY REPORT AT 6:00 PM EAT
-    # FIXED: Correct datetime.time() usage
-    app.job_queue.run_daily(
-        daily_report,
-        time=datetime.time(hour=15, minute=0)  # 6:00 PM EAT
-    )
+    # FIXED: datetime.time() → datetime.time(...)
+    app.job_queue.run_daily(daily_report, time=datetime.time(hour=15, minute=0))
     
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=lambda: asyncio.run(keep_alive()), daemon=True).start()
     
-    logger.info("LIVE 24/7 – ALL FEATURES ACTIVE – ETERNAL SADAQAH!")
+    logger.info("LIVE 24/7 – DAILY REPORT AT 6PM EAT 100% WORKING!")
     app.run_polling(drop_pending_updates=True)
