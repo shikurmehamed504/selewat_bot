@@ -14,7 +14,10 @@ DATA_DIR = "./data"
 TOTAL_FILE = os.path.join(DATA_DIR, "total.txt")
 CHALLENGE_FILE = os.path.join(DATA_DIR, "challenge.txt")
 WEB_URL = "https://selewat-bot.onrender.com/total"
-CHALLENGE_GOAL = 10_000_000
+CHALLENGE_GOAL = 20_000_000  # ← NOW 20 MILLION
+
+# ALLOWED USERS FOR /start
+ALLOWED_USERS = {"Sirriwesururi", "S1emu", "Abdu_504"}
 
 # LOGGING
 logging.basicConfig(level=logging.INFO)
@@ -55,6 +58,19 @@ def save_challenge(chal):
 
 # ==================== BOT HANDLERS ====================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    username = user.username
+
+    # ONLY ALLOW THESE 3 USERS TO USE /start
+    if username not in ALLOWED_USERS:
+        await update.message.reply_text(
+            "السلام عليكم\n\n"
+            "This command is restricted to authorized users only.\n"
+            "Join the group to participate:\n"
+            "https://t.me/sirrul_wejud"
+        )
+        return
+
     chat = update.effective_chat
     if chat.type == "private":
         await update.message.reply_text(
@@ -75,15 +91,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     total = load_total()
     chal = load_challenge()
-    remaining = CHALLENGE_GOAL - chal
+    remaining = max(0, CHALLENGE_GOAL - chal)  # ← Never negative
     await update.message.reply_text(
         "السلام عليكم ورحمة الله\n\n"
-        "SIRULWUJUD SELEWAT BOT\n\n"
-        f"**GLOBAL TOTAL**: *{total:,}*\n"
-        f"**CURRENT CHALLENGE**: *{chal:,} / {CHALLENGE_GOAL:,}*\n"
-        f"**Remaining**: *{remaining:,}*\n\n"
-        "Send any number = added to **GROUP SALAWAT**!\n"
-        "Let’s hit 10 million InshaAllah!",
+        "ሲሩል ውጁድ የሰለዋት መርከብ\n\n"
+        f"**ሶስተኛው ቻሌንጅ እስካሁን የተባለው ሰለዋት**: *{total:,}*\n"
+        f"**ጠቅላላ**: *{min(chal, CHALLENGE_GOAL):,} / {CHALLENGE_GOAL:,}*\n"
+        f"**የቀረው**: *{remaining:,}*\n\n"
+        "በእዚህ የጀምዓ የሰለዎት ዘመቻ ላይ በቻልነው ያህል በመሳተፍ የበረካው ተካፋይ እንሁን !\n"
+        "20 million እስንደርስ ድረስ InshaAllah!",
         parse_mode='Markdown'
     )
 
@@ -106,13 +122,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text.startswith('/'):
         return
 
-    # FINAL FIX: REMOVE ALL COMMAS + TAKE LARGEST NUMBER = 100% UNBREAKABLE
-    clean_text = text.replace(',', '').replace('،', '')  # Remove English & Arabic commas
+    # EXCLUDE NUMBERS INSIDE * * (like *65567*)
+    if re.search(r'\*\d+\*', text):
+        return  # ← SKIP WILDCARD NUMBERS
+
+    # REMOVE COMMAS + ARABIC COMMAS
+    clean_text = text.replace(',', '').replace('،', '')
     numbers = re.findall(r'\d+', clean_text)
     if not numbers:
         return
 
-    num = max(int(n) for n in numbers)  # ← BIGGEST NUMBER = REAL SALAWAT!
+    num = max(int(n) for n in numbers)
     if num <= 0:
         return
 
@@ -124,17 +144,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     total = load_total()
     new_total = total + num
 
+    # IF GOAL REACHED → NO NEW CHALLENGE → REMAINING = 0
     if new_chal >= CHALLENGE_GOAL:
-        excess = new_chal - CHALLENGE_GOAL
-        new_chal = excess
-        save_challenge(new_chal)
+        save_challenge(CHALLENGE_GOAL)  # ← Cap at 20M
         save_total(new_total)
         await update.message.reply_text(
-            f"<b>CHALLENGE COMPLETED!</b> {CHALLENGE_GOAL:,} Salawat achieved!\n"
-            f"<b>Starting new challenge...</b>\n"
             f"<b>{full_name}</b> added <b>{num:,}</b> to <b>Group Salawat</b>\n"
             f"Total count: <b>{new_total:,}</b>\n"
-            f"Remaining Selewat from new challenge: <b>{CHALLENGE_GOAL - new_chal:,}</b>",
+            f"Remaining Selewat from this challenge: <b>0</b>",
             parse_mode='HTML',
             reply_to_message_id=update.message.message_id
         )
@@ -149,7 +166,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='HTML',
             reply_to_message_id=update.message.message_id
         )
-    logger.info(f"{full_name} +{num:,} → TOTAL: {new_total:,} | CHALLENGE: {new_chal:,}")
+    logger.info(f"{full_name} +{num:,} → TOTAL: {new_total:,} | CHALLENGE: {min(new_chal, CHALLENGE_GOAL):,}")
 
 # ==================== WEB DASHBOARD ====================
 flask_app = Flask(__name__)
@@ -158,8 +175,8 @@ flask_app = Flask(__name__)
 @flask_app.route('/total')
 def total():
     total_count = load_total()
-    chal = load_challenge()
-    remaining = CHALLENGE_GOAL - chal
+    chal = min(load_challenge(), CHALLENGE_GOAL)
+    remaining = max(0, CHALLENGE_GOAL - chal)
     return f'''
     <meta http-equiv="refresh" content="10">
     <h1 style="text-align:center; color:#2E8B57; font-family:Arial;">GLOBAL SALAWAT TOTAL</h1>
@@ -203,5 +220,5 @@ if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=lambda: asyncio.run(keep_alive()), daemon=True).start()
     
-    logger.info("LIVE 24/7 – COMMA + ARABIC COMMA + 3,136,691 = 3,136,691 – 100% UNBREAKABLE!")
+    logger.info("LIVE 24/7 – 20M CHALLENGE – NO NEW CHALLENGE AFTER GOAL – /start RESTRICTED!")
     app.run_polling(drop_pending_updates=True)
