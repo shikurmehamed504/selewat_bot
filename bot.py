@@ -4,6 +4,8 @@ import asyncio
 import urllib.request
 import logging
 import re
+import json
+from datetime import datetime
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from flask import Flask
@@ -13,10 +15,11 @@ TOKEN = "8229668167:AAFmHYkIfwzTNMa_SzPETJrCJSfE42CPmNA"
 DATA_DIR = "./data"
 TOTAL_FILE = os.path.join(DATA_DIR, "total.txt")
 CHALLENGE_FILE = os.path.join(DATA_DIR, "challenge.txt")
+DAILY_FILE = os.path.join(DATA_DIR, "daily.json")
 WEB_URL = "https://selewat-bot.onrender.com/total"
-CHALLENGE_GOAL = 20_000_000  # ← NOW 20 MILLION
+CHALLENGE_GOAL = 20_000_000
 
-# ALLOWED USERS FOR /start
+# ONLY THESE 3 USERS CAN USE /start
 ALLOWED_USERS = {"Sirriwesururi", "S1emu", "Abdu_504"}
 
 # LOGGING
@@ -31,6 +34,8 @@ def ensure_file():
             with open(file_path, "w") as f:
                 f.write("0")
             logger.info(f"CREATED: {file_path}")
+    if not os.path.exists(DAILY_FILE):
+        save_daily({})
 
 def load_total():
     try:
@@ -56,51 +61,115 @@ def save_challenge(chal):
     with open(CHALLENGE_FILE, "w") as f:
         f.write(str(chal))
 
+def load_daily():
+    try:
+        with open(DAILY_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_daily(data):
+    with open(DAILY_FILE, "w") as f:
+        json.dump(data, f)
+
+# ==================== DAILY REPORT (6PM EAT – ALL GROUPS) ====================
+async def daily_report(context):
+    today = datetime.now().strftime("%Y-%m-%d")
+    data = load_daily()
+    if today not in data or not data[today]:
+        return
+
+    daily_data = data[today]
+    total_today = sum(daily_data.values())
+    top_user = max(daily_data, key=daily_data.get)
+    top_count = daily_data[top_user]
+
+    report = (
+        f"**DAILY SALAWAT REPORT – {today}**\n\n"
+        f"Top Scorer Today: <b>{top_user}</b> with <b>{top_count:,}</b> Salawat!\n"
+        f"Total Submissions Today: <b>{len(daily_data)}</b> Ahbab\n"
+        f"Total Salawat Today: <b>{total_today:,}</b>\n\n"
+        f"Alhamdulillah! Keep going until 20 Million InshaAllah!\n"
+        f"ﷺ"
+    )
+
+    # SEND TO ALL GROUPS WHERE BOT IS ADMIN
+    try:
+        updates = await context.bot.get_updates(limit=100, allowed_updates=["my_chat_member"])
+        for update in updates:
+            if update.my_chat_member:
+                chat = update.my_chat_member.chat
+                if chat.type in ["group", "supergroup"]:
+                    status = update.my_chat_member.new_chat_member.status
+                    if status in ["administrator", "creator"]:
+                        try:
+                            await context.bot.send_message(chat_id=chat.id, text=report, parse_mode='HTML')
+                        except:
+                            pass
+    except:
+        pass
+
+    # Reset daily
+    data[today] = {}
+    save_daily(data)
+
 # ==================== BOT HANDLERS ====================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    username = user.username
+    username = user.username or "Unknown"
 
-    # ONLY ALLOW THESE 3 USERS TO USE /start
+    # ONLY ALLOW THESE 3 USERS
     if username not in ALLOWED_USERS:
         await update.message.reply_text(
             "السلام عليكم\n\n"
-            "This command is restricted to authorized users only.\n"
+            "This command is restricted to authorized users only.\n\n"
             "Join the group to participate:\n"
-            "https://t.me/sirrul_wejud"
+            "https://t.me/sirrul_wejud",
+            disable_web_page_preview=True
         )
         return
 
     chat = update.effective_chat
     if chat.type == "private":
         await update.message.reply_text(
-            "السلام عليكم\n\n"
+            "السلام عليكم ورحمة الله\n\n"
             "This bot only works in the group!\n\n"
-            "Join: https://t.me/sirrul_wejud",
+            "Join the official group:\n"
+            "https://t.me/sirrul_wejud",
             disable_web_page_preview=True
         )
         return
 
+    # CHECK IF BOT IS ADMIN
     try:
         bot_member = await context.bot.get_chat_member(chat.id, context.bot.id)
         if bot_member.status not in ["administrator", "creator"]:
-            await update.message.reply_text("Please make me admin to count Salawat!")
+            await update.message.reply_text(
+                "Please make me an admin first to count Salawat!\n"
+                "Go to Group Settings → Administrators → Add @sirulwujudselewatbot"
+            )
             return
-    except:
+    except Exception as e:
+        logger.error(f"ADMIN CHECK FAILED: {e}")
         return
 
+    # SHOW FULL STATS
     total = load_total()
     chal = load_challenge()
-    remaining = max(0, CHALLENGE_GOAL - chal)  # ← Never negative
+    remaining = max(0, CHALLENGE_GOAL - chal)
+    participants_today = len(load_daily().get(datetime.now().strftime("%Y-%m-%d"), {}))
+
     await update.message.reply_text(
-        "السلام عليكم ورحمة الله\n\n"
+        "السلام عليكم ورحمة الله وبركاته\n\n"
         "ሲሩል ውጁድ የሰለዋት መርከብ\n\n"
         f"**ሶስተኛው ቻሌንጅ እስካሁን የተባለው ሰለዋት**: *{total:,}*\n"
         f"**ጠቅላላ**: *{min(chal, CHALLENGE_GOAL):,} / {CHALLENGE_GOAL:,}*\n"
-        f"**የቀረው**: *{remaining:,}*\n\n"
-        "በእዚህ የጀምዓ የሰለዎት ዘመቻ ላይ በቻልነው ያህል በመሳተፍ የበረካው ተካፋይ እንሁን !\n"
-        "20 million እስንደርስ ድረስ InshaAllah!",
-        parse_mode='Markdown'
+        f"**የቀረው**: *{remaining:,}*\n"
+        f"**ዛሬ ሪፖርት ያደረጉ አህባቦች ብዛት**: *{participants_today}*\n\n"
+        "በእዚህ የጀምዓ የሰለዎት ዘመቻ ላይ በቻልነው ያህል በመሳተፍ የበረካው ተካፋይ እንሁን !!\n"
+        "20 million እስክንደርስ ድረስ InshaAllah!\n\n",
+        parse_mode='Markdown',
+        disable_web_page_preview=True
     )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -122,11 +191,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text.startswith('/'):
         return
 
-    # EXCLUDE NUMBERS INSIDE * * (like *65567*)
+    # SKIP *65567*
     if re.search(r'\*\d+\*', text):
-        return  # ← SKIP WILDCARD NUMBERS
+        return
 
-    # REMOVE COMMAS + ARABIC COMMAS
     clean_text = text.replace(',', '').replace('،', '')
     numbers = re.findall(r'\d+', clean_text)
     if not numbers:
@@ -138,35 +206,35 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user = update.message.from_user
     full_name = user.full_name
+    username = user.username or full_name
 
     chal = load_challenge()
-    new_chal = chal + num
+    new_chal = min(chal + num, CHALLENGE_GOAL)
     total = load_total()
     new_total = total + num
 
-    # IF GOAL REACHED → NO NEW CHALLENGE → REMAINING = 0
-    if new_chal >= CHALLENGE_GOAL:
-        save_challenge(CHALLENGE_GOAL)  # ← Cap at 20M
-        save_total(new_total)
-        await update.message.reply_text(
-            f"<b>{full_name}</b> added <b>{num:,}</b> to <b>Group Salawat</b>\n"
-            f"Total count: <b>{new_total:,}</b>\n"
-            f"Remaining Selewat from this challenge: <b>0</b>",
-            parse_mode='HTML',
-            reply_to_message_id=update.message.message_id
-        )
-    else:
-        save_challenge(new_chal)
-        save_total(new_total)
-        remaining = CHALLENGE_GOAL - new_chal
-        await update.message.reply_text(
-            f"<b>{full_name}</b> added <b>{num:,}</b> to <b>Group Salawat</b>\n"
-            f"Total count: <b>{new_total:,}</b>\n"
-            f"Remaining Selewat from this challenge: <b>{remaining:,}</b>",
-            parse_mode='HTML',
-            reply_to_message_id=update.message.message_id
-        )
-    logger.info(f"{full_name} +{num:,} → TOTAL: {new_total:,} | CHALLENGE: {min(new_chal, CHALLENGE_GOAL):,}")
+    save_challenge(new_chal)
+    save_total(new_total)
+
+    # Update daily stats
+    today = datetime.now().strftime("%Y-%m-%d")
+    daily = load_daily()
+    if today not in daily:
+        daily[today] = {}
+    daily[today][username] = daily[today].get(username, 0) + num
+    save_daily(daily)
+
+    participants_today = len(daily.get(today, {}))
+    remaining = CHALLENGE_GOAL - new_chal
+
+    await update.message.reply_text(
+        f"<b>{full_name}</b> added <b>{num:,}</b> to <b>Group Salawat</b>\n"
+        f"The number of Ahbabs that submitted today: <b>{participants_today}</b>\n"
+        f"Total count: <b>{new_total:,}</b>\n"
+        f"Remaining Selewat from this challenge: <b>{remaining:,}</b>",
+        parse_mode='HTML',
+        reply_to_message_id=update.message.message_id
+    )
 
 # ==================== WEB DASHBOARD ====================
 flask_app = Flask(__name__)
@@ -217,8 +285,11 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
+    # Daily report at 6:00 PM EAT
+    app.job_queue.run_daily(daily_report, time=datetime.time(hour=15, minute=0))
+    
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=lambda: asyncio.run(keep_alive()), daemon=True).start()
     
-    logger.info("LIVE 24/7 – 20M CHALLENGE – NO NEW CHALLENGE AFTER GOAL – /start RESTRICTED!")
+    logger.info("LIVE 24/7 – RESTRICTED /start – DAILY REPORT – ETERNAL!")
     app.run_polling(drop_pending_updates=True)
