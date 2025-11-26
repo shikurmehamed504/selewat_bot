@@ -272,16 +272,18 @@ if __name__ == "__main__":
     logger.info("GLOBAL SELEWAT BOT STARTING...")
     ensure_file()
     
+    # KILL ANY OLD BOT INSTANCES (PREVENT CONFLICT)
+    os.system("kill 1 || true")
+    
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    # FINAL WORKING LINE – DAILY REPORT AT 6:00 PM EAT
     app.job_queue.run_daily(daily_report, time=time(hour=15, minute=0))
     
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=lambda: asyncio.run(keep_alive()), daemon=True).start()
     
-    logger.info("LIVE 24/7 – FINAL VERSION – 100% WORKING!")
+    logger.info("LIVE 24/7 – NO CONFLICT – 100% WORKING!")
     app.run_polling(drop_pending_updates=True)
