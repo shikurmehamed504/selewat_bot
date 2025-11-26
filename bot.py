@@ -154,15 +154,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         "السلام عليكم ورحمة الله وبركاته\n\n"
-        "SIRULWUJUD SELEWAT BOT\n\n"
-        f"**GLOBAL TOTAL**: *{total:,}*\n"
-        f"**CURRENT CHALLENGE**: *{min(chal, CHALLENGE_GOAL):,} / {CHALLENGE_GOAL:,}*\n"
-        f"**Remaining**: *{remaining:,}*\n"
-        f"**Ahbab Submitted Today**: *{participants_today}*\n\n"
-        "Send any number = added to **GROUP SALAWAT**!\n"
-        "Let’s hit 20 million InshaAllah!\n\n"
-        "Daily Report: 6:00 PM EAT\n"
-        "Dashboard: https://selewat-bot.onrender.com/total",
+        "ሲሩል ውጁድ የሰለዋት መርከብ\n\n"
+        f"**ሶስተኛው ቻሌንጅ እስካሁን የተባለው ሰለዋት**: *{total:,}*\n"
+        f"**ጠቅላላ**: *{min(chal, CHALLENGE_GOAL):,} / {CHALLENGE_GOAL:,}*\n"
+        f"**የቀረው**: *{remaining:,}*\n"
+        f"**ዛሬ ሪፖርት ያደረጉ አህባቦች ብዛት**: *{participants_today}*\n\n"
+        "በእዚህ የጀምዓ የሰለዎት ዘመቻ ላይ በቻልነው ያህል በመሳተፍ የበረካው ተካፋይ እንሁን !!\n"
+        "20 million እስክንደርስ ድረስ InshaAllah!\n\n",
         parse_mode='Markdown',
         disable_web_page_preview=True
     )
@@ -221,7 +219,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     remaining = CHALLENGE_GOAL - new_chal
 
     await update.message.reply_text(
-        f"<b>{full_name}</b> added <b>{num:,}</b> to <b>Group Salawat</b>\n"
+        f"<b>{full_name}</b> added <b>{num:,}</b> to <b>Group Salawat</b>\n\n"
         f"The number of Ahbabs that submitted today: <b>{participants_today}</b>\n"
         f"Total count: <b>{new_total:,}</b>\n"
         f"Remaining Selewat from this challenge: <b>{remaining:,}</b>",
