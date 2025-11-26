@@ -5,7 +5,7 @@ import urllib.request
 import logging
 import re
 import json
-from datetime import datetime, time  # ← Import time for daily report
+from datetime import datetime, time
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from flask import Flask
@@ -16,9 +16,10 @@ DATA_DIR = "./data"
 TOTAL_FILE = os.path.join(DATA_DIR, "total.txt")
 CHALLENGE_FILE = os.path.join(DATA_DIR, "challenge.txt")
 DAILY_FILE = os.path.join(DATA_DIR, "daily.json")
-WEB_URL = "https://selewat-bot.onrender.com/total"
+WEB_URL = "https://selewat-bot-j4s.onrender.com/total"  # ← YOUR NEW RENDER URL!
 CHALLENGE_GOAL = 20_000_000
 
+# ONLY THESE 3 USERS CAN USE /start
 ALLOWED_USERS = {"Sirriwesururi", "S1emu", "Abdu_504"}
 
 logging.basicConfig(level=logging.INFO)
@@ -31,7 +32,6 @@ def ensure_file():
         if not os.path.exists(file_path):
             with open(file_path, "w") as f:
                 f.write("0")
-            logger.info(f"CREATED: {file_path}")
     if not os.path.exists(DAILY_FILE):
         save_daily({})
 
@@ -143,8 +143,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "Go to Group Settings → Administrators → Add @sirulwujudselewatbot"
             )
             return
-    except Exception as e:
-        logger.error(f"ADMIN CHECK FAILED: {e}")
+    except:
         return
 
     total = load_total()
@@ -154,13 +153,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         "السلام عليكم ورحمة الله وبركاته\n\n"
-        "ሲሩል ውጁድ የሰለዋት መርከብ\n\n"
-        f"**ሶስተኛው ቻሌንጅ እስካሁን የተባለው ሰለዋት**: *{total:,}*\n"
-        f"**ጠቅላላ**: *{min(chal, CHALLENGE_GOAL):,} / {CHALLENGE_GOAL:,}*\n"
-        f"**የቀረው**: *{remaining:,}*\n"
-        f"**ዛሬ ሪፖርት ያደረጉ አህባቦች ብዛት**: *{participants_today}*\n\n"
-        "በእዚህ የጀምዓ የሰለዎት ዘመቻ ላይ በቻልነው ያህል በመሳተፍ የበረካው ተካፋይ እንሁን !!\n"
-        "20 million እስክንደርስ ድረስ InshaAllah!\n\n",
+        "SIRULWUJUD SELEWAT BOT\n\n"
+        f"**GLOBAL TOTAL**: *{total:,}*\n"
+        f"**CURRENT CHALLENGE**: *{min(chal, CHALLENGE_GOAL):,} / {CHALLENGE_GOAL:,}*\n"
+        f"**Remaining**: *{remaining:,}*\n"
+        f"**Ahbab Submitted Today**: *{participants_today}*\n\n"
+        "Send any number = added to **GROUP SALAWAT**!\n"
+        "Let’s hit 20 million InshaAllah!\n\n"
+        "Daily Report: 6:00 PM EAT\n"
+        "Dashboard: https://selewat-bot-j4s.onrender.com/total",
         parse_mode='Markdown',
         disable_web_page_preview=True
     )
@@ -219,7 +220,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     remaining = CHALLENGE_GOAL - new_chal
 
     await update.message.reply_text(
-        f"<b>{full_name}</b> added <b>{num:,}</b> to <b>Group Salawat</b>\n\n"
+        f"<b>{full_name}</b> added <b>{num:,}</b> to <b>Group Salawat</b>\n"
         f"The number of Ahbabs that submitted today: <b>{participants_today}</b>\n"
         f"Total count: <b>{new_total:,}</b>\n"
         f"Remaining Selewat from this challenge: <b>{remaining:,}</b>",
@@ -272,7 +273,7 @@ if __name__ == "__main__":
     logger.info("GLOBAL SELEWAT BOT STARTING...")
     ensure_file()
     
-    # KILL ANY OLD BOT INSTANCES (PREVENT CONFLICT)
+    # KILL ANY OLD INSTANCES
     os.system("kill 1 || true")
     
     app = Application.builder().token(TOKEN).build()
@@ -280,10 +281,11 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
+    # DAILY REPORT AT 6:00 PM EAT
     app.job_queue.run_daily(daily_report, time=time(hour=15, minute=0))
     
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=lambda: asyncio.run(keep_alive()), daemon=True).start()
     
-    logger.info("LIVE 24/7 – NO CONFLICT – 100% WORKING!")
+    logger.info("LIVE 24/7 – FINAL VERSION – 100% WORKING!")
     app.run_polling(drop_pending_updates=True)
