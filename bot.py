@@ -5,7 +5,7 @@ import urllib.request
 import logging
 import re
 import json
-from datetime import datetime, time
+from datetime import datetime, time  # ← THIS LINE FIXED EVERYTHING!
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from flask import Flask
@@ -16,10 +16,9 @@ DATA_DIR = "./data"
 TOTAL_FILE = os.path.join(DATA_DIR, "total.txt")
 CHALLENGE_FILE = os.path.join(DATA_DIR, "challenge.txt")
 DAILY_FILE = os.path.join(DATA_DIR, "daily.json")
-WEB_URL = "https://selewat-bot-j4s.onrender.com/total"  # ← YOUR NEW RENDER URL!
+WEB_URL = "https://selewat-bot.onrender.com/total"
 CHALLENGE_GOAL = 20_000_000
 
-# ONLY THESE 3 USERS CAN USE /start
 ALLOWED_USERS = {"Sirriwesururi", "S1emu", "Abdu_504"}
 
 logging.basicConfig(level=logging.INFO)
@@ -32,6 +31,7 @@ def ensure_file():
         if not os.path.exists(file_path):
             with open(file_path, "w") as f:
                 f.write("0")
+            logger.info(f"CREATED: {file_path}")
     if not os.path.exists(DAILY_FILE):
         save_daily({})
 
@@ -143,7 +143,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "Go to Group Settings → Administrators → Add @sirulwujudselewatbot"
             )
             return
-    except:
+    except Exception as e:
+        logger.error(f"ADMIN CHECK FAILED: {e}")
         return
 
     total = load_total()
@@ -161,7 +162,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Send any number = added to **GROUP SALAWAT**!\n"
         "Let’s hit 20 million InshaAllah!\n\n"
         "Daily Report: 6:00 PM EAT\n"
-        "Dashboard: https://selewat-bot-j4s.onrender.com/total",
+        "Dashboard: https://selewat-bot.onrender.com/total",
         parse_mode='Markdown',
         disable_web_page_preview=True
     )
@@ -273,15 +274,12 @@ if __name__ == "__main__":
     logger.info("GLOBAL SELEWAT BOT STARTING...")
     ensure_file()
     
-    # KILL ANY OLD INSTANCES
-    os.system("kill 1 || true")
-    
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    # DAILY REPORT AT 6:00 PM EAT
+    # FINAL WORKING LINE – DAILY REPORT AT 6:00 PM EAT
     app.job_queue.run_daily(daily_report, time=time(hour=15, minute=0))
     
     threading.Thread(target=run_flask, daemon=True).start()
