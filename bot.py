@@ -189,7 +189,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # BEAUTIFUL REPLY – EXACTLY AS YOU WANTED
     await update.message.reply_text(
-        f"<b>{full_name}</b> added <b>{num:,}</b> to Group Salawat\n\n"
+        f"<b>{full_name}</b> added <b>{num:,}</b> to Sirul Wjud Salawat Group\n\n"
         f"The number of Ahbabs that submitted today: <b>{ahbab_today}</b>\n"
         f"Total count: <b>{total:,}</b>\n"
         f"Remaining Salawat from this challenge: <b>{CHALLENGE_GOAL - chal:,}</b>",
