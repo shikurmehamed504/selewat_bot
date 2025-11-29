@@ -23,7 +23,7 @@ GROUPS_FILE = os.path.join(DATA_DIR, "groups.json")
 USERNAMES_FILE = os.path.join(DATA_DIR, "usernames.json")
 WEB_URL = "https://selewat-bot-je4s.onrender.com/total"
 CHALLENGE_GOAL = 20_000_000
-ALLOWED_USERS = {"Sirriwesururi", "S1emu", "Abdu_504"}
+ALLOWED_USERS = {"Sirriwesururi", "S1emu", "Abdu_504", "QALB_33", "Reyhan728"}
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -211,13 +211,14 @@ def run_flask():
 # ==================== KEEP-ALIVE ====================
 async def keep_alive():
     while True:
-        await asyncio.sleep(180)
+        await asyncio.sleep(180)  # Every 3 minutes
         try:
-            urllib.request.urlopen(f"{WEB_URL}/total", timeout=10)
+            # Correct URLs — no double /total
+            urllib.request.urlopen(WEB_URL, timeout=10)           # https://.../total
             urllib.request.urlopen("https://selewat-bot-je4s.onrender.com/", timeout=10)
-            logger.info("Keep-alive ping sent")
+            logger.info("Keep-alive ping sent – bot stays awake!")
         except Exception as e:
-            logger.warning(f"Keep-alive failed: {e}")
+            logger.warning(f"Keep-alive failed (normal): {e}")
 
 # ==================== MAIN ====================
 async def main():
