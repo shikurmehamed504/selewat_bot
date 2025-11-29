@@ -247,7 +247,8 @@ async def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.add_handler(MessageHandler(filters.StatusUpdate.CHAT_MEMBER, track_groups))
+   from telegram.ext import StatusUpdateFilter
+    app.add_handler(ChatMemberHandler(track_groups, StatusUpdateFilter.ALL))
     app.job_queue.run_daily(daily_report, time(hour=15, minute=0))  # 6 PM EAT
 
     while True:
