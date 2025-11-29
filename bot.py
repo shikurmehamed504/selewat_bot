@@ -137,12 +137,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         f"السلام عليكم ورحمة الله وبركاته\n\n"
-        f"<b>GLOBAL TOTAL</b>: <code>{total:,}</code>\n"
-        f"<b>CHALLENGE</b>: <code>{min(chal, CHALLENGE_GOAL):,} / 20,000,000</code>\n"
-        f"<b>Remaining</b>: <code>{remaining:,}</code>\n"
-        f"<b>Ahbab Today</b>: <code>{ahbab_today}</code>\n\n"
-        f"Send any number → added instantly!\n\n"
-        f"Dashboard: {WEB_URL}",
+        f"<b>ሶስተኛው ቻሌንጅ እስካሁን የተባለው ሰለዋት</b>: <code>{total:,}</code>\n"
+        f"<b>ጠቅላላ</b>: <code>{min(chal, CHALLENGE_GOAL):,} / 20,000,000</code>\n"
+        f"<b>የቀረው</b>: <code>{remaining:,}</code>\n"
+        f"<b>ዛሬ ሪፖርት ያደረጉ አህባቦች ብዛት</b>: <code>{ahbab_today}</code>\n\n"
+        f"በእዚህ የጀምዓ የሰለዎት ዘመቻ ላይ በቻልነው ያህል በመሳተፍ የበረካው ተካፋይ እንሁን!!\n\n",
         parse_mode="HTML"
     )
 
@@ -178,10 +177,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ahbab_today = len(daily[today])
 
     await update.message.reply_text(
-        f"<b>{full_name}</b> added <b>{num:,}</b> to Group Salawat\n\n"
-        f"The number of Ahbabs that submitted today: <b>{ahbab_today}</b>\n"
-        f"Total count: <b>{total:,}</b>\n"
-        f"Remaining: <b>{CHALLENGE_GOAL - chal:,}</b>",
+        f"<b>{full_name}</b> added <b>{num:,}</b>Selewat to Sirul Wejud Selewat Group\n\n"
+        f"ዛሬ ሪፖርት ያደረጉ አህባቦች ብዛት: <b>{ahbab_today}</b>\n"
+        f"ጠቅላላ/Total count: <b>{total:,}</b>\n"
+        f"የቀረው/Remaining: <b>{CHALLENGE_GOAL - chal:,}</b>\n\n"
+        f"በእዚህ የጀምዓ የሰለዎት ዘመቻ ላይ በቻልነው ያህል በመሳተፍ የበረካው ተካፋይ እንሁን!!\n"
+        f"20 million እስክንደርስ ድረስ InshaAllah!\n",
         parse_mode="HTML",
         reply_to_message_id=update.message.message_id
     )
