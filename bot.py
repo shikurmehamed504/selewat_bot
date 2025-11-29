@@ -247,7 +247,7 @@ async def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.add_handler(MessageHandler(filters.StatusUpdate.MY_CHAT_MEMBER, track_groups))
+    app.add_handler(MessageHandler(filters.StatusUpdate.CHAT_MEMBER, track_groups))
     app.job_queue.run_daily(daily_report, time(hour=15, minute=0))  # 6 PM EAT
 
     while True:
